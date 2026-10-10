@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,7 +12,10 @@ import (
 	"time"
 )
 
-const workers = 8
+const (
+	workers  = 8
+	doneFile = "check.log"
+)
 
 var client = &http.Client{
 	Timeout: 2 * time.Minute,
@@ -58,18 +62,34 @@ func main() {
 		log.Fatal(err)
 	}
 
+	logF, err := os.OpenFile(doneFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	jobs := make(chan string)
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 
 	for range workers {
 		wg.Go(func() {
 			for site := range jobs {
 				code, dur, err := check(site)
+
+				var line string
 				if err != nil {
 					log.Printf("site: %s, error: %v, dur: %v", site, err, dur)
-					continue
+					line = fmt.Sprintf("site: %s, error: %v, dur: %v\n", site, err, dur)
+				} else {
+					line = fmt.Sprintf("site: %s, code: %d, dur: %v\n", site, code, dur)
 				}
-				log.Printf("site: %s, code: %d, dur: %v", site, code, dur)
+
+				mu.Lock()
+				_, err = io.WriteString(logF, line)
+				mu.Unlock()
+				if err != nil {
+					log.Printf("write %s: %v", doneFile, err)
+				}
 			}
 		})
 	}
@@ -79,4 +99,8 @@ func main() {
 	}
 	close(jobs)
 	wg.Wait()
+
+	if err := logF.Close(); err != nil {
+		log.Fatal(err)
+	}
 }
