@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,7 +30,8 @@ func check(url string) (int, time.Duration, error) {
 		return 0, time.Since(start), err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+
+	_, err = io.Copy(io.Discard, resp.Body)
 
 	return resp.StatusCode, time.Since(start), err
 }
@@ -62,14 +64,28 @@ func loadURLs() ([]string, error) {
 func main() {
 	data, err := loadURLs()
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
 	}
 
-	for _, site := range data {
-		code, dur, err := check(site)
-		if err != nil {
-			log.Print(err)
-		}
-		log.Printf("site: %v, code: %v, dur: %v", site, code, dur)
+	jobs := make(chan string)
+	var wg sync.WaitGroup
+
+	for range workers {
+		wg.Go(func() {
+			for site := range jobs {
+				code, dur, err := check(site)
+				if err != nil {
+					log.Print(err)
+				}
+				log.Printf("site: %v, code: %v, dur: %v", site, code, dur)
+			}
+		})
 	}
+
+	for _, job := range data {
+		jobs <- job
+	}
+
+	close(jobs)
+	wg.Wait()
 }
