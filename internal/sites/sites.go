@@ -40,8 +40,16 @@ func LoadURLs(path string) ([]string, error) {
 	return urls, scanner.Err()
 }
 
+func hasScheme(s string) bool {
+	i := strings.Index(s, "://")
+	if i <= 0 {
+		return false
+	}
+	return !strings.ContainsAny(s[:i], "/?#")
+}
+
 func normalizeURL(raw string) (string, error) {
-	if !strings.Contains(raw, "://") {
+	if !hasScheme(raw) {
 		raw = "https://" + raw
 	}
 
@@ -52,7 +60,7 @@ func normalizeURL(raw string) (string, error) {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return "", fmt.Errorf("unsupported scheme %q", u.Scheme)
 	}
-	if u.Host == "" {
+	if u.Hostname() == "" {
 		return "", errors.New("empty host")
 	}
 	return u.String(), nil
