@@ -5,6 +5,10 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/Puker228/pingulina/internal/checker"
+	"github.com/Puker228/pingulina/internal/runner"
+	"github.com/Puker228/pingulina/internal/sites"
 )
 
 const (
@@ -13,7 +17,7 @@ const (
 
 func main() {
 	workers := flag.Int("w", 8, "the number of workers")
-	sites := flag.String("s", "sites.txt", "file with websites")
+	websites := flag.String("s", "sites.txt", "file with websites")
 	doneFile := flag.String("o", "check.log", "file with output")
 	flag.Parse()
 
@@ -21,7 +25,7 @@ func main() {
 		log.Fatal("number of workers shoud be >= 1")
 	}
 
-	urls, err := loadURLs(*sites)
+	urls, err := sites.LoadURLs(*websites)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,8 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := NewChecker(20*time.Second, *workers, userAgent)
-	r := NewRunner(c, *workers, logF)
+	c := checker.NewChecker(20*time.Second, *workers, userAgent)
+	r := runner.NewRunner(c, *workers, logF)
 
 	r.Run(urls)
 

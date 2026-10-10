@@ -1,7 +1,7 @@
 .PHONY: build run test fmt build-all
 
 APP := pingulina
-CMD := .
+CMD := ./cmd/app
 DIST_DIR := dist
 LDFLAGS := -s -w
 ARGS ?=

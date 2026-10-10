@@ -1,4 +1,4 @@
-package main
+package sites
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func loadURLs(path string) ([]string, error) {
+func LoadURLs(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

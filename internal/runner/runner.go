@@ -1,19 +1,21 @@
-package main
+package runner
 
 import (
 	"fmt"
 	"io"
 	"log"
 	"sync"
+
+	"github.com/Puker228/pingulina/internal/checker"
 )
 
 type Runner struct {
-	checker *Checker
+	checker *checker.Checker
 	workers int
 	out     io.Writer
 }
 
-func NewRunner(checker *Checker, workers int, out io.Writer) *Runner {
+func NewRunner(checker *checker.Checker, workers int, out io.Writer) *Runner {
 	return &Runner{
 		checker: checker,
 		workers: workers,
