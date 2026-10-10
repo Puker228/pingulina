@@ -36,3 +36,5 @@ go.work.sum
 sites.txt
 /pingulina
 check.log
+
+/dist
