@@ -32,12 +32,11 @@ func check(url string) (int, time.Duration, error) {
 	defer resp.Body.Close()
 
 	_, err = io.Copy(io.Discard, resp.Body)
-
 	return resp.StatusCode, time.Since(start), err
 }
 
-func loadURLs() ([]string, error) {
-	file, err := os.Open("sites.txt")
+func loadURLs(path string) ([]string, error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -45,24 +44,16 @@ func loadURLs() ([]string, error) {
 
 	var urls []string
 	scanner := bufio.NewScanner(file)
-
 	for scanner.Scan() {
-		url := strings.TrimSpace(scanner.Text())
-		if url == "" {
-			continue
+		if u := strings.TrimSpace(scanner.Text()); u != "" {
+			urls = append(urls, u)
 		}
-		urls = append(urls, url)
 	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return urls, nil
+	return urls, scanner.Err()
 }
 
 func main() {
-	data, err := loadURLs()
+	urls, err := loadURLs("sites.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,17 +66,17 @@ func main() {
 			for site := range jobs {
 				code, dur, err := check(site)
 				if err != nil {
-					log.Print(err)
+					log.Printf("site: %s, error: %v, dur: %v", site, err, dur)
+					continue
 				}
-				log.Printf("site: %v, code: %v, dur: %v", site, code, dur)
+				log.Printf("site: %s, code: %d, dur: %v", site, code, dur)
 			}
 		})
 	}
 
-	for _, job := range data {
-		jobs <- job
+	for _, u := range urls {
+		jobs <- u
 	}
-
 	close(jobs)
 	wg.Wait()
 }
