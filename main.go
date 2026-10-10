@@ -2,11 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -20,6 +17,10 @@ func main() {
 	doneFile := flag.String("o", "check.log", "file with output")
 	flag.Parse()
 
+	if *workers < 1 {
+		log.Fatal("number of workers shoud be >= 1")
+	}
+
 	urls, err := loadURLs(*sites)
 	if err != nil {
 		log.Fatal(err)
@@ -31,39 +32,9 @@ func main() {
 	}
 
 	c := NewChecker(20*time.Second, *workers, userAgent)
+	r := NewRunner(c, *workers, logF)
 
-	jobs := make(chan string)
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-
-	for range *workers {
-		wg.Go(func() {
-			for site := range jobs {
-				code, dur, err := c.Check(site)
-
-				var line string
-				if err != nil {
-					log.Printf("site: %s, error: %v, dur: %v", site, err, dur)
-					line = fmt.Sprintf("site: %s, error: %v, dur: %v\n", site, err, dur)
-				} else {
-					line = fmt.Sprintf("site: %s, code: %d, dur: %v\n", site, code, dur)
-				}
-
-				mu.Lock()
-				_, err = io.WriteString(logF, line)
-				mu.Unlock()
-				if err != nil {
-					log.Printf("write %s: %v", *doneFile, err)
-				}
-			}
-		})
-	}
-
-	for _, u := range urls {
-		jobs <- u
-	}
-	close(jobs)
-	wg.Wait()
+	r.Run(urls)
 
 	if err := logF.Close(); err != nil {
 		log.Fatal(err)
