@@ -34,5 +34,5 @@ go.work.sum
 
 *.DS_Store
 sites.txt
-pingulina
+/pingulina
 check.log
