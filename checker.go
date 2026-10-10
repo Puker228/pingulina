@@ -30,7 +30,7 @@ func (c *Checker) Check(site string) (int, time.Duration, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -38,6 +38,6 @@ func (c *Checker) Check(site string) (int, time.Duration, error) {
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+	_, err = io.Copy(io.Discard, io.LimitReader(resp.Body, c.maxBody))
 	return resp.StatusCode, time.Since(start), err
 }
