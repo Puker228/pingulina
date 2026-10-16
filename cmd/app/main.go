@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	if *workers < 1 {
-		log.Fatal("number of workers shoud be >= 1")
+		log.Fatal("number of workers must be >= 1")
 	}
 
 	urls, err := sites.LoadURLs(*websites)
