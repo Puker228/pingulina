@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -29,10 +30,10 @@ func NewChecker(timeout time.Duration, maxConns int, userAgent string) *Checker 
 	}
 }
 
-func (c *Checker) Check(site string) Result {
+func (c *Checker) Check(ctx context.Context, site string) Result {
 	start := time.Now()
 
-	req, err := http.NewRequest(http.MethodGet, site, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, site, nil)
 	if err != nil {
 		return Result{0, 0, err}
 	}

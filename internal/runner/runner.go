@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -23,7 +24,7 @@ func NewRunner(checker *checker.Checker, workers int, out io.Writer) *Runner {
 	}
 }
 
-func (r *Runner) Run(urls []string) {
+func (r *Runner) Run(ctx context.Context, urls []string) {
 	jobs := make(chan string)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -31,8 +32,7 @@ func (r *Runner) Run(urls []string) {
 	for range r.workers {
 		wg.Go(func() {
 			for site := range jobs {
-				res := r.checker.Check(site)
-				fmt.Print()
+				res := r.checker.Check(ctx, site)
 
 				var line string
 				if res.Err != nil {

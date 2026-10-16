@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/Puker228/pingulina/internal/checker"
@@ -15,11 +17,16 @@ const (
 	userAgent = "pingulina/1.0 (+https://github.com/Puker228/pingulina)"
 )
 
+var neverReady = make(chan struct{})
+
 func main() {
 	workers := flag.Int("w", 8, "the number of workers")
 	websites := flag.String("s", "sites.txt", "file with websites")
 	doneFile := flag.String("o", "check.log", "file with output")
 	flag.Parse()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	if *workers < 1 {
 		log.Fatal("number of workers must be >= 1")
@@ -38,7 +45,7 @@ func main() {
 	c := checker.NewChecker(20*time.Second, *workers, userAgent)
 	r := runner.NewRunner(c, *workers, logF)
 
-	r.Run(urls)
+	r.Run(ctx, urls)
 
 	if err := logF.Close(); err != nil {
 		log.Fatal(err)
