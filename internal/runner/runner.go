@@ -31,21 +31,22 @@ func (r *Runner) Run(urls []string) {
 	for range r.workers {
 		wg.Go(func() {
 			for site := range jobs {
-				code, dur, err := r.checker.Check(site)
+				res := r.checker.Check(site)
+				fmt.Print()
 
 				var line string
-				if err != nil {
-					log.Printf("site: %s, error: %v, dur: %v", site, err, dur)
-					line = fmt.Sprintf("site: %s, error: %v, dur: %v\n", site, err, dur)
+				if res.Err != nil {
+					log.Printf("site: %s, error: %v, dur: %v", site, res.Err, res.Dur)
+					line = fmt.Sprintf("site: %s, error: %v, dur: %v\n", site, res.Err, res.Dur)
 				} else {
-					line = fmt.Sprintf("site: %s, code: %d, dur: %v\n", site, code, dur)
+					line = fmt.Sprintf("site: %s, code: %d, dur: %v\n", site, res.Code, res.Dur)
 				}
 
 				mu.Lock()
-				_, err = io.WriteString(r.out, line)
+				_, res.Err = io.WriteString(r.out, line)
 				mu.Unlock()
-				if err != nil {
-					log.Printf("write result: %v", err)
+				if res.Err != nil {
+					log.Printf("write result: %v", res.Err)
 				}
 			}
 		})

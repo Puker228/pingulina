@@ -12,6 +12,12 @@ type Checker struct {
 	maxBody   int64
 }
 
+type Result struct {
+	Code int
+	Dur  time.Duration
+	Err  error
+}
+
 func NewChecker(timeout time.Duration, maxConns int, userAgent string) *Checker {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.MaxIdleConnsPerHost = maxConns
@@ -23,21 +29,21 @@ func NewChecker(timeout time.Duration, maxConns int, userAgent string) *Checker 
 	}
 }
 
-func (c *Checker) Check(site string) (int, time.Duration, error) {
+func (c *Checker) Check(site string) Result {
 	start := time.Now()
 
 	req, err := http.NewRequest(http.MethodGet, site, nil)
 	if err != nil {
-		return 0, 0, err
+		return Result{0, 0, err}
 	}
 	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return 0, time.Since(start), err
+		return Result{0, time.Since(start), err}
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(io.Discard, io.LimitReader(resp.Body, c.maxBody))
-	return resp.StatusCode, time.Since(start), err
+	return Result{resp.StatusCode, time.Since(start), err}
 }
